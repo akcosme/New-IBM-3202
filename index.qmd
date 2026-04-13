@@ -6,9 +6,9 @@ title: "Home"
 
 ## About Me
 
-![](allen%20cosme%20headshot.png)
+![my photo](allen%20cosme%20headshot.png){width=250px}
 
-Hello! My name is **Allen Cosme**. I am currently a student studying **Business Administration** at **Cal Poly Pomona** with and emphasis in internationl business.
+Hello! My name is **Allen Cosme**. I am currently a student studying **Business Administration** at **Cal Poly Pomona** with and emphasis in internationl business. I am in my final year of college and I am expected to graduate in December 2026. I have a passion for data analysis, technology, and communication, and I am excited to use these skills to make a positive impact in the business world.
 
 ## Career Aspiration
 
@@ -19,17 +19,19 @@ My career aspiration is to build a successful career in business where I can use
 Here are some of my current skills:
 
 -   Communication
+-   MS office
 -   Teamwork
 -   Problem-solving
 -   Data analysis
--   Business knowledge
+-   financial analysis
 -   Basic coding in R-   Dashboard creation using Quarto
 
 ## Education
 
 - **Cal Poly Pomona**
-- Major: **Business**
-- Coursework related to data, business analysis, and technology
+- Major: **Business Administration: International business**
+- Expected Graduation: **December 2026**
+    - courses: Business Analytics, Data Visualization, International Marketing, Supply Chain Management, Accounting, Finance, and more.
 
 ## Website Overview
 
