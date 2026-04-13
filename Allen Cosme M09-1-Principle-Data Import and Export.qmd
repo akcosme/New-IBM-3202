@@ -1,0 +1,117 @@
+---
+title: "M09-1-Principle: Data import and export"
+author: Allen Cosme
+date: today
+format: 
+    html:
+        theme: cosmo
+        toc: true
+        toc-location: right-body
+        toc-depth: 4
+        code-line-numbers: true
+        code-link: true
+        number-sections: true
+        embed-resources: true
+        df-print: paged
+Executed: 
+    freeze: true
+    echo: fenced
+    warning: false
+---
+
+::: callout-note
+**note** the lecture notes will be available on [Professor Jungs quarto page](https://jmjung.quarto.pub/m09-1-principle-data-import-and-export/)
+:::
+
+# Overview
+
+## Expected Learning Outcomes
+- Explain how to create a Github repository and collaborate with others on the same R projects.
+- Effectively load and look through built-in datasets in R.
+- Import various type of data (csv, xlsx, and SPSS) to RStudio.
+- Scrape data from the web using SelectorGadget, rvest, and inspect function of web browers.
+- Import multiple data sets and work with them.
+- Work with labelled data in R.
+- Export/save output data to local pc and push to Github.
+
+## Textbook chapters covered
+
+- ch. 7: Data Import
+- ch. 20: Speadsheets
+- ch. 24: Web scraping
+- ch 18: Missing values
+
+# Installing and loading up R Packages
+```{r}
+#| label: package loading
+
+library(tidyverse)
+library(sjPlot)
+```
+
+# Reading Built in datasets
+```{r}
+# look at data sets in the loaded packages
+data()
+
+# geting information about the lakers dataset
+head(lakers)
+lakers$player
+lakers |>
+    as_tibble()
+```
+
+# importing data
+
+## `csv` files
+```{r}
+#read .csv files
+stu_per_base <- read.csv("/Users/akcosme/Downloads/StudentsPerformance.csv")
+
+class(stu_per_base)
+head(stu_per_base)
+```
+
+## using `base r`
+```{r}
+#?read.csv
+stu_per_base <- read.csv("/Users/akcosme/Downloads/StudentsPerformance.csv") # Not as good as read_csv
+
+class(stu_per_base)
+head(stu_per_base)
+```
+
+## using `readr`
+
+```{r}
+stu_per_readr <- read_csv("/Users/akcosme/Downloads/StudentsPerformance.csv") # Use read_csv() all the time from now on over read.csv()
+
+spec(stu_per_readr)
+class(stu_per_readr)
+head(stu_per_readr)
+
+skimr::skim(stu_per_readr) #  better than summary() function
+
+stu_per_readr$`math score` # RStudio's auto prompt
+stu_per_readr$"math score" # same outcome
+stu_per_readr$'math score'
+```
+
+# Importing `Excel` data with `readxl` package
+
+```{r readxl}
+library(readxl)
+
+sp_excel <- read_excel("/Users/akcosme/Downloads/StudentsPerformance.xlsx") 
+
+#?read_excel
+
+sp_excel
+skimr::skim(sp_excel)
+```
+
+## Importing data from the web
+
+```{r}
+read_csv("https://raw.githubusercontent.com/jaejungca/R-data-import-export/refs/heads/main/data/StudentsPerformance.csv")
+```
