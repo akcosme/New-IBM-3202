@@ -1,0 +1,625 @@
+---
+title: "M09-2-Application: Data import and export"
+author: Allen Cosme
+date: today
+format: 
+    html:
+        theme: cosmo
+        toc: true
+        toc-location: right-body
+        toc-depth: 4
+        code-line-numbers: true
+        code-link: true
+        number-sections: true
+        embed-resources: true
+        df-print: paged
+Executed: 
+    freeze: true
+    echo: fenced
+    warning: false
+---
+
+# Preparation
+
+```{r}
+# install.packages("tidyverse")
+# install.packages("readxl")
+# install.packages("readxl")
+library(tidyverse)
+library(readxl)
+library(readxl)
+```
+
+#  Dealing with csv file
+
+## Importing csv file
+
+### 
+
+```{r}
+item_csv <- read_csv2("/Users/akcosme/Downloads/items_ordered.csv",
+                      trim_ws = TRUE,
+                      show_col_types = FALSE)
+
+glimpse(item_csv)
+```
+
+```{r}
+item_csv <- item_csv %>%
+  mutate(
+    order_date = dmy(order_date),   # or mdy/order_date depending on format
+    quantity   = as.integer(quantity),
+  )
+
+glimpse(item_csv)
+```
+
+## 
+
+```{r}
+library(readr)
+library(dplyr)
+library(lubridate)
+
+item_csv <- read_csv2(
+  "/Users/akcosme/Downloads/items_ordered.csv",
+  trim_ws = TRUE,
+  show_col_types = FALSE
+) %>%
+  mutate(
+    order_date = dmy(order_date)
+  )
+
+most_expensive_item <- item_csv %>%
+  filter(price == max(price, na.rm = TRUE)) %>%
+  pull(item)
+
+most_expensive_item
+```
+# dealing with an excel file
+
+##
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+item_excel <- read_excel("/Users/akcosme/Downloads/items_ordered.xlsx",
+                         trim_ws = TRUE)
+glimpse(item_excel)
+```
+
+##
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+
+item_excel <- read_excel("/Users/akcosme/Downloads/items_ordered.xlsx",
+                         trim_ws = TRUE)
+
+if (!dir.exists("images")) {
+  dir.create("images")
+}
+
+p <- ggplot(item_excel, aes(x = item, y = quantity)) +
+  geom_col() +
+  labs(
+    title = "Quantity of Items Ordered",
+    x = "Item",
+    y = "Quantity"
+  )
+
+ggsave("images/items_quantity.png", plot = p, width = 8, height = 6)
+ggsave("images/items_quantity.pdf", plot = p, width = 8, height = 6)
+ggsave("images/items_quantity.jpeg", plot = p, width = 8, height = 6)
+```
+
+# Importing from the clipboard and cleaning NA's or "--"
+
+##
+
+```{r}
+library(dplyr)
+library(janitor)
+library(readr)
+library(writexl)
+
+dis_exec <- read.delim(pipe("pbpaste"), sep = "\t", header = TRUE)
+
+dis_exec_clean <- dis_exec %>%
+  select(where(~ !all(is.na(.)))) %>%   # remove empty columns
+  mutate(across(where(is.character), ~ na_if(., "N/A"))) %>%
+  mutate(across(where(is.character), ~ na_if(., "---"))) %>%
+  clean_names()
+
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+
+write_csv(dis_exec_clean, "data/dis_exec_clean.csv")
+write_xlsx(dis_exec_clean, "data/dis_exec_clean.xlsx")
+```
+
+# web scraping
+
+##
+
+```{r}
+library(xml2)
+library(rvest)
+library(stringr)
+library(dplyr)
+library(tibble)
+
+page <- read_html("/Users/akcosme/Downloads/IMDb Top 250 movies.html")
+html_text <- readLines("/Users/akcosme/Downloads/IMDb Top 250 movies.html", warn = FALSE) |>
+  paste(collapse = " ")
+
+top_movies <- str_match_all(html_text, '"titleText":\\{"text":"([^"]+)"\\}')[[1]][,2]
+top_movies <- top_movies[top_movies != ""]
+top_movies <- unique(top_movies)[1:250]
+```
+
+##
+
+```{r}
+year <- page %>%
+  html_elements("your_selector_here") %>%
+  html_text() %>%
+  str_trim()
+
+year <- year[str_detect(year, "\\d{4}")]
+```
+
+##
+
+```{r}
+year <- str_match_all(html_text, '"releaseYear":\\{"year":([0-9]{4})')[[1]][,2]
+year <- year[year != ""]
+year <- year[1:250]
+
+length(year)
+year
+```
+
+##
+
+```{r}
+rating <- str_match_all(html_text, '"aggregateRating":([0-9]\\.[0-9])')[[1]][,2]
+rating <- rating[rating != ""]
+rating <- rating[1:250]
+
+length(rating)
+rating
+```
+
+# Creating a data frame from web-scraped data
+
+```{r}
+library(dplyr)
+library(tibble)
+library(stringr)
+
+# clean vectors first if needed
+year <- str_extract(year, "\\d{4}")
+rating <- str_extract(rating, "\\d+\\.?\\d*")
+
+# check lengths
+length(top_movies)
+length(year)
+length(rating)
+
+# create data frame
+top250_movies <- tibble(
+  top_movies = top_movies,
+  year = year,
+  rating = as.numeric(rating)
+) %>%
+  arrange(desc(rating))
+
+# print top and bottom 6 rows
+head(top250_movies, 6)
+tail(top250_movies, 6)
+```
+
+# Replacing values with NA
+
+```{r}
+# install.packages("naniar")
+library(tibble)
+library(naniar)
+library(dplyr)
+
+data <- tibble::tribble(
+  ~name,            ~x,  ~y,              ~z,
+  "N/A",             1,  "N/A",          -100,
+  "N A",             3,  "NOt available",-99,
+  "N / A",          NA,  "29",           -98,
+  "Not Available", -99,  "25",          -101,
+  "John Smith",    -98,  "28",            -1
+)
+
+data
+```
+
+##
+
+```{r}
+q6_1 <- data %>%
+  replace_with_na_all(condition = ~ .x == "N/A")
+
+q6_1
+```
+
+##
+
+```{r}
+q6_2_a <- data %>%
+  replace_with_na(replace = list(
+    name = c("N/A", "N A", "N / A"),
+    y = c("N/A", "N A", "N / A")
+  ))
+
+q6_2_a
+```
+
+```{r}
+q6_2_b <- data %>%
+  replace_with_na_all(condition = ~ .x %in% c("N/A", "N A", "N / A"))
+
+q6_2_b
+```
+
+```{r}
+q6_2_c <- data %>%
+  replace_with_na_all(condition = ~ str_detect(.x, "N\\s*/?\\s*A"))
+
+q6_2_c
+```
+
+```{r}
+q6_3 <- data %>%
+  replace_with_na_all(condition = ~ str_detect(.x, "N\\s*/?\\s*A|Not Available"))
+
+q6_3
+```
+
+```{r}
+q6_2_d <- data %>%
+  replace_with_na_at(
+    .vars = c("name", "y"),
+    condition = ~ .x %in% c("N/A", "N A", "N / A")
+  )
+
+q6_2_d
+```
+
+# Impact of GDP on student/teacher ratio
+
+```{r}
+# install.packages("WDI")
+library(tidyverse)
+library(WDI)
+library(ggrepel)
+library(scales)
+```
+
+##
+
+```{r}
+student_teacher <- read_csv(
+  "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-07/student_teacher_ratio.csv"
+)
+
+glimpse(student_teacher)
+summary(student_teacher)
+
+# 1) variables with missing values
+colSums(is.na(student_teacher))
+
+# 2) years covered and their distribution
+student_teacher %>%
+  count(year) %>%
+  arrange(year)
+
+# 3) all indicators and their distribution
+student_teacher %>%
+  count(indicator) %>%
+  arrange(desc(n))
+
+# filter data
+s_t_ratio_2nd_edu_2016 <- student_teacher %>%
+  filter(
+    year == 2016,
+    indicator == "Secondary Education",
+    !is.na(student_ratio)
+  )
+
+dim(s_t_ratio_2nd_edu_2016)
+glimpse(s_t_ratio_2nd_edu_2016)
+```
+
+```{r}
+unique(student_teacher$indicator)
+```
+
+##
+
+```{r}
+WDIsearch("gdp per capita")
+WDIsearch("population total")
+```
+
+##
+
+```{r}
+indicators_2016 <- WDI(
+  country = "all",
+  indicator = c(gdp_per_capita = "NY.GDP.PCAP.CD", population = "SP.POP.TOTL"),
+  start = 2016,
+  end = 2016,
+  extra = TRUE
+) %>%
+  filter(!is.na(iso3c)) %>%
+  select(iso3c, country, region, gdp_per_capita, population)
+```
+
+```{r}
+# create iso3c if missing (use country_code when it's 3-letter; otherwise map from country names)
+if (!"iso3c" %in% names(s_t_ratio_2nd_edu_2016)) {
+  sample_codes <- head(na.omit(s_t_ratio_2nd_edu_2016$country_code), 50)
+  if (length(sample_codes) > 0 && mean(nchar(sample_codes) == 3) > 0.5) {
+    s_t_ratio_2nd_edu_2016 <- s_t_ratio_2nd_edu_2016 |> dplyr::mutate(iso3c = country_code)
+  } else {
+    if (!requireNamespace("countrycode", quietly = TRUE)) install.packages("countrycode")
+    s_t_ratio_2nd_edu_2016 <- s_t_ratio_2nd_edu_2016 |> dplyr::mutate(iso3c = countrycode::countrycode(country, "country.name", "iso3c"))
+  }
+}
+
+ratio_gdp_2016 <- s_t_ratio_2nd_edu_2016 |> dplyr::left_join(indicators_2016, by = "iso3c")
+
+ratio_gdp_2016
+```
+
+```{r}
+ggplot(ratio_gdp_2016, aes(x = student_ratio)) +
+  geom_histogram(bins = 30) +
+  labs(
+    title = "Distribution of Student/Teacher Ratio",
+    x = "Student/Teacher Ratio",
+    y = "Count"
+  )
+```
+
+```{r}
+ggplot(ratio_gdp_2016, aes(x = student_ratio)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10() +
+  labs(
+    title = "Distribution of Student/Teacher Ratio (Log X-Axis)",
+    x = "Student/Teacher Ratio (log scale)",
+    y = "Count"
+  )
+```
+
+##
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(scales)
+
+plot_data <- ratio_gdp_2016 %>%
+  mutate(country_label = coalesce(country.x, country.y)) %>%
+  filter(
+    !is.na(gdp_per_capita),
+    !is.na(population),
+    !is.na(region),
+    !is.na(country_label),
+    !is.na(student_ratio)
+  )
+
+ggplot(
+  plot_data,
+  aes(
+    x = gdp_per_capita,
+    y = student_ratio,
+    size = population,
+    color = region
+  )
+) +
+  geom_point(alpha = 0.7) +
+  geom_text_repel(
+    aes(label = country_label),
+    size = 3,
+    max.overlaps = 100,
+    show.legend = FALSE
+  ) +
+  geom_smooth(
+    aes(x = gdp_per_capita, y = student_ratio),
+    method = "lm",
+    se = FALSE,
+    color = "black",
+    inherit.aes = FALSE
+  ) +
+  scale_x_log10(labels = label_dollar()) +
+  scale_size_continuous(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    title = "Impact of GDP per Capita on Student/Teacher Ratio",
+    subtitle = "Secondary Education, 2016",
+    x = "GDP per Capita (current US$, log scale)",
+    y = "Student/Teacher Ratio",
+    color = "Region",
+    size = "Population",
+    caption = "Sources: TidyTuesday student-teacher ratio data and World Bank WDI"
+  ) +
+  theme_minimal()
+```
+
+# Labelled data
+
+```{r}
+# install.packages("labelled")
+library(haven)
+library(labelled)
+library(dplyr)
+
+demo <- read_sav("/Users/akcosme/Downloads/demo.sav")
+
+look_for(demo)
+
+glimpse(demo)
+```
+
+##
+
+```{r}
+library(janitor)
+
+tabyl(as_factor(demo$employ)) |> adorn_pct_formatting()
+tabyl(as_factor(demo$retire)) |> adorn_pct_formatting()
+tabyl(as_factor(demo$empcat)) |> adorn_pct_formatting()
+tabyl(as_factor(demo$jobsat)) |> adorn_pct_formatting()
+
+summary(demo$jobsat)
+```
+
+##
+
+```{r}
+library(tidyr)
+library(ggplot2)
+
+tech_counts <- demo %>%
+  select(wireless, multline, voice, pager, internet, callid, callwait) %>%
+  mutate(across(everything(), as_factor)) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "technology",
+    values_to = "status"
+  ) %>%
+  filter(!is.na(status)) %>%
+  count(technology, status)
+
+tech_counts
+```
+
+```{r}
+ggplot(tech_counts, aes(x = technology, y = n, fill = status)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Job-Related Technology Ownership",
+    x = "Technology Product",
+    y = "Count",
+    fill = "Status"
+  ) +
+  theme_minimal()
+```
+
+# Impact of retirement on the use of the total job-related technology products
+
+##
+
+```{r}
+library(dplyr)
+library(haven)
+library(labelled)
+
+demo <- demo %>%
+  mutate(
+    total_job_tech =
+      (as.numeric(as_factor(wireless)) == 2) +
+      (as.numeric(as_factor(multline)) == 2) +
+      (as.numeric(as_factor(voice)) == 2) +
+      (as.numeric(as_factor(pager)) == 2) +
+      (as.numeric(as_factor(internet)) == 2) +
+      (as.numeric(as_factor(callid)) == 2) +
+      (as.numeric(as_factor(callwait)) == 2)
+  )
+
+var_label(demo$total_job_tech) <- "Total number of job-related technology products used"
+
+summary(demo$total_job_tech)
+```
+
+##
+
+```{r}
+library(janitor)
+
+demo %>%
+  mutate(
+    retire = as_factor(retire),
+    empcat = as_factor(empcat),
+    jobsat = as_factor(jobsat)
+  ) %>%
+  group_by(retire, empcat, jobsat) %>%
+  summarise(
+    avg_total_job_tech = mean(total_job_tech, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  )
+```
+
+##
+
+Retirement status, employment category, and job satisfaction appear to be related to the average number of job-related technology products used. Groups that are more actively connected to work tend to use more job-related technology, while retired or less work-involved groups tend to use fewer. The exact pattern should be interpreted from the averages shown in the tables.
+
+# Job-related technology product ownership
+
+```{r}
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(forcats)
+
+tech_prop <- demo %>%
+  transmute(
+    wireless = as_factor(wireless) == "Yes",
+    multline = as_factor(multline) == "Yes",
+    voice = as_factor(voice) == "Yes",
+    pager = as_factor(pager) == "Yes",
+    internet = as_factor(internet) == "Yes",
+    callid = as_factor(callid) == "Yes",
+    callwait = as_factor(callwait) == "Yes"
+  ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "technology",
+    values_to = "owns"
+  ) %>%
+  group_by(technology) %>%
+  summarise(
+    proportion = mean(owns, na.rm = TRUE),
+    n = sum(!is.na(owns)),
+    se = sd(as.numeric(owns), na.rm = TRUE) / sqrt(n),
+    lower = proportion - 1.96 * se,
+    upper = proportion + 1.96 * se,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    technology = fct_reorder(technology, proportion, .desc = TRUE),
+    lower = pmax(lower, 0),
+    upper = pmin(upper, 1)
+  )
+
+ggplot(tech_prop, aes(x = technology, y = proportion)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  geom_text(aes(label = percent(proportion, accuracy = 0.1)), vjust = -0.4) +
+  scale_y_continuous(labels = percent_format(), limits = c(0, 1.05)) +
+  labs(
+    title = "Proportion Owning Each Job-Related Technology Product",
+    subtitle = "Bars show sample proportions with 95% confidence intervals",
+    x = "Technology Product",
+    y = "Proportion Owning Product",
+    caption = "Error bars: proportion +/- 1.96 x standard error"
+  ) +
+  theme_minimal()
+```
+
+##
+The bar chart shows the proportion of respondents who own each job-related technology product. The products are ordered from highest to lowest proportion, and the error bars represent 95% confidence intervals around each estimated proportion.
