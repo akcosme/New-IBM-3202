@@ -1,0 +1,400 @@
+---
+title: "M11-2-Application Assignment: Introduction to Functional Programming in R"
+author: "allen cosme"
+date: today
+format: 
+    html:
+        theme: flatly
+        self-contained: true
+        toc: true
+        toc-location: right-body
+        toc-depth: 4
+        code-line-numbers: true
+        code-link: true
+        number-sections: true
+        embed-resources: true
+        df-print: paged
+Executed: 
+    freeze: true
+    echo: fenced
+    warning: false
+---
+
+#
+
+```{r}
+quantity <- 50
+
+if (quantity > 20) {
+  print("You sold a lot")
+} else {
+  print("Not enough for today.")
+}
+
+quantity
+```
+
+#
+
+```{r}
+sales <- 25
+
+if (sales < 20) {
+  print("Not enough for today.")
+} else if (sales >= 20 & sales <= 30) {
+  print("Average Day.")
+} else if (sales > 30) {
+  print("You had a great day!")
+}
+
+sales
+```
+
+#
+
+```{r}
+category <- "A"
+price <- 100
+
+if (category == "A") {
+  tax_rate <- 0.08
+} else if (category == "B") {
+  tax_rate <- 0.10
+} else if (category == "C") {
+  tax_rate <- 0.20
+}
+
+total_price <- price * (1 + tax_rate)
+
+print(paste("A tax rate of", tax_rate * 100, "% is applied. The total price is", total_price, "."))
+
+category
+price
+tax_rate
+total_price
+```
+
+#
+
+```{r}
+q4 <- c(2, 5, 3, 9, 8, 11, 6)
+count_even <- 0
+
+for (num in q4) {
+  if (num %% 2 == 0) {
+    count_even <- count_even + 1
+  }
+}
+
+print(count_even)
+
+q4
+count_even
+```
+
+#
+
+```{r}
+q5 <- 1:8
+
+for (num in q5) {
+  if (num > 4 & num %% 2 == 0) {
+    print(num)
+  } else {
+    print("Condition not satisfied")
+  }
+}
+
+q5
+```
+
+#
+
+```{r}
+pow <- function(x, y) {
+  result <- x^y
+  cat(x, "raised to the power of", y, "is", result, ".\n")
+}
+
+pow(8, 2)
+```
+
+#
+
+##
+
+```{r}
+df <- data.frame(x = 1:4, y = 5:8, z = 10:13)
+
+df$mean <- apply(df, 1, mean)
+df$sum <- apply(df, 1, sum)
+
+df
+```
+
+##
+
+apply family
+
+```{r}
+q8 <- c(12, 18, 6)
+
+sqrt_apply <- sapply(q8, sqrt)
+
+sqrt_apply
+q8
+```
+
+map family
+
+```{r}
+library(purrr)
+
+q8 <- c(12, 18, 6)
+
+sqrt_map <- map_dbl(q8, sqrt)
+
+sqrt_map
+q8
+```
+
+##
+
+Apply family
+
+```{r}
+q9 <- list(A = 1:5, B = 6:20, C = 1)
+
+lengths_apply <- sapply(q9, length)
+
+lengths_apply
+q9
+```
+
+Map family
+
+```{r}
+library(purrr)
+
+q9 <- list(A = 1:5, B = 6:20, C = 1)
+
+lengths_map <- map_int(q9, length)
+
+lengths_map
+q9
+```
+
+##
+
+```{r}
+# lapply always returns a list, while sapply tries to simplify the output
+# into a vector or matrix when possible.
+# The similar map functions are map() and map_dbl()/map_int()/map_chr().
+# map() is like lapply because it returns a list.
+# map_dbl(), map_int(), and map_chr() are like sapply because they return
+# simplified outputs of a specific type.
+# If I want to calculate the exponentials of three numbers, I should use
+# sapply() or map_dbl() because the output is numeric and can be simplified
+# into a numeric vector.
+```
+
+#
+
+##
+
+```{r}
+library(tidyverse)
+
+theme_set(theme_bw())
+
+student_ratio <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-07/student_teacher_ratio.csv")
+
+student_ratio
+```
+
+##
+
+```{r}
+glimpse(student_ratio)
+
+student_ratio %>% 
+  summarise(
+    year_count = n_distinct(year),
+    indicator_count = n_distinct(indicator),
+    country_count = n_distinct(country)
+  )
+```
+
+##
+
+```{r}
+ratio_2012 <- student_ratio %>%
+  filter(year == 2012) %>%
+  drop_na(student_ratio) %>%
+  arrange(student_ratio)
+
+bottom_10_2012 <- ratio_2012 %>% slice_head(n = 10)
+top_10_2012 <- ratio_2012 %>% slice_tail(n = 10)
+
+plot_2012 <- bind_rows(bottom_10_2012, top_10_2012) %>%
+  mutate(country = reorder(country, student_ratio))
+
+ggplot(plot_2012, aes(x = country, y = student_ratio)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Top and Bottom 10 Countries in Student-Teacher Ratio",
+    subtitle = "Year: 2012",
+    x = "Country",
+    y = "Student-Teacher Ratio"
+  )
+```
+
+##
+
+```{r}
+plot_ratio_year <- function(selected_year) {
+  ratio_year <- student_ratio %>%
+    filter(year == selected_year) %>%
+    drop_na(student_ratio) %>%
+    arrange(student_ratio)
+
+  bottom_10 <- ratio_year %>% slice_head(n = 10)
+  top_10 <- ratio_year %>% slice_tail(n = 10)
+
+  plot_data <- bind_rows(bottom_10, top_10) %>%
+    mutate(country = reorder(country, student_ratio))
+
+  ggplot(plot_data, aes(x = country, y = student_ratio)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      title = "Top and Bottom 10 Countries in Student-Teacher Ratio",
+      subtitle = paste("Year:", selected_year),
+      x = "Country",
+      y = "Student-Teacher Ratio"
+    )
+}
+```
+
+##
+
+```{r}
+plot_ratio_year(2012)
+plot_ratio_year(2013)
+plot_ratio_year(2014)
+plot_ratio_year(2015)
+plot_ratio_year(2016)
+plot_ratio_year(2017)
+```
+
+#
+
+```{r}
+library(tidyverse)
+
+animal_outcomes <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_outcomes.csv")
+animal_complaints <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_complaints.csv")
+brisbane_complaints <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/brisbane_complaints.csv")
+
+head(animal_outcomes)
+head(animal_complaints)
+head(brisbane_complaints)
+```
+
+##
+
+```{r}
+glimpse(animal_outcomes)
+glimpse(animal_complaints)
+glimpse(brisbane_complaints)
+```
+
+##
+
+```{r}
+library(janitor)
+
+clean_col_names <- function(data) {
+  data %>%
+    clean_names()
+}
+
+animal_outcomes <- animal_outcomes %>% clean_col_names()
+animal_complaints <- animal_complaints %>% clean_col_names()
+brisbane_complaints <- brisbane_complaints %>% clean_col_names()
+
+names(animal_outcomes)
+names(animal_complaints)
+names(brisbane_complaints)
+```
+
+##
+
+```{r}
+plot_bar_count <- function(data, var) {
+  var_quo <- rlang::enquo(var)
+  data %>%
+    dplyr::count(!!var_quo, name = "n") %>%
+    dplyr::arrange(dplyr::desc(n)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = forcats::fct_reorder(as.character(!!var_quo), n), y = n)) +
+    ggplot2::geom_col() +
+    ggplot2::coord_flip() +
+    ggplot2::labs(x = rlang::as_label(var_quo), y = "Count") +
+    ggplot2::theme_minimal()
+}
+```
+
+##
+
+```{r}
+names(animal_outcomes)
+names(animal_complaints)
+names(brisbane_complaints)
+```
+
+
+```{r}
+plot_bar_count <- function(data, var) {
+  data %>%
+    filter(!is.na({{ var }})) %>%
+    count({{ var }}) %>%
+    ggplot(aes(x = reorder(as.character({{ var }}), n), y = n)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      x = NULL,
+      y = "Count",
+      title = paste("Count of", deparse(substitute(var)))
+    )
+}
+
+plot_bar_count(animal_outcomes, animal_type)
+plot_bar_count(animal_complaints, animal_type)
+plot_bar_count(animal_complaints, complaint_type)
+plot_bar_count(brisbane_complaints, category)
+plot_bar_count(brisbane_complaints, suburb)
+```
+
+#
+
+```{r}
+library(tidyverse)
+
+average_ozone_by_month <- function(data) {
+  
+  get_month_average <- function(month_data) {
+    mean(month_data$Ozone, na.rm = TRUE)
+  }
+  
+  nested_data <- data %>%
+    group_by(Month) %>%
+    nest()
+  
+  nested_data %>%
+    mutate(avg_ozone = map_dbl(data, get_month_average)) %>%
+    select(Month, avg_ozone)
+}
+
+average_ozone_by_month(airquality)
+```
